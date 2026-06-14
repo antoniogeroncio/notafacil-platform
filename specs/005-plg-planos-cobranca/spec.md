@@ -8,6 +8,15 @@
 
 **Input**: Modelo Product-Led Growth — qualquer pessoa pode contratar o sistema pela landing page: cria sua conta, cadastra a empresa após logar e assina o plano que melhor atende, pagando via gateway PagSeguro (cartão, Pix e demais formas). Planos baseados no volume de emissão de notas por CNPJ.
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: Como precificar e cobrar as notas extras (overage)? → A: Preço **fixo por nota extra**, cobrado na **fatura recorrente seguinte** (valor unitário parametrizável).
+- Q: Efeito da liberação manual após o teto (franquia + 1.000)? → A: O administrador do sistema **concede um incremento adicional (+N)** e a medição **continua**, aplicando um novo teto.
+- Q: Como modelar o "administrador do sistema" (operador da plataforma)? → A: Usuário de **plataforma (backoffice)**, fora do modelo de tenant, com **RBAC global próprio** (privilégios isolados — Princípio III).
+- Q: Uma conta pode ter várias empresas/CNPJs na v1? → A: **Não — 1 conta = 1 empresa** na v1; multiempresa é evolução futura.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Criar conta a partir da landing page (Priority: P1)
@@ -51,8 +60,8 @@ operar isolado nesse tenant.
    uma empresa com CNPJ válido, **Then** o sistema cria o tenant, vincula o
    usuário como `Admin` e estabelece o isolamento (Princípio III).
 2. **Given** um CNPJ já cadastrado na plataforma, **When** o usuário tenta
-   cadastrá-lo, **Then** o sistema rejeita a duplicidade. [NEEDS CLARIFICATION:
-   um mesmo CNPJ pode existir em mais de uma conta? esperado que não.]
+   cadastrá-lo, **Then** o sistema rejeita a duplicidade — o CNPJ é único na
+   plataforma (FR-004) e, na v1, vinculado a uma única conta.
 3. **Given** um usuário sem empresa, **When** ele acessa áreas que exigem tenant
    (emissão, cadastros), **Then** o sistema o direciona a cadastrar a empresa
    primeiro.
@@ -154,9 +163,9 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
 
 - Conta criada mas e-mail nunca verificado: [NEEDS CLARIFICATION: exigir
   verificação antes de assinar/emitir?]
-- Usuário com mais de uma empresa: cada empresa/CNPJ tem assinatura e cota
-  próprias. [NEEDS CLARIFICATION: confirmar se uma conta pode ter várias
-  empresas.]
+- Conta × empresa: na **v1, 1 conta = 1 empresa** (consistente com a feature
+  001). Suporte a múltiplas empresas por conta (contadores/grupos) fica como
+  evolução futura, exigindo modelo de associação conta↔empresa.
 - Cancelamento no meio do ciclo: acesso permanece até o fim do período pago?
   [NEEDS CLARIFICATION: política de proration/cancelamento.]
 - Falha de renovação recorrente (cartão expirado): período de carência antes de
@@ -199,16 +208,18 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   regularização.
 - **FR-012**: Ultrapassada a franquia mensal, o sistema MUST continuar permitindo
   emissão em **modo pagamento por uso** até o teto de **franquia + 1.000** notas
-  no mês, registrando cada nota extra para cobrança por uso.
+  no mês, registrando cada nota extra a um **preço fixo por nota**, cobrado na
+  **fatura recorrente seguinte** (valor unitário parametrizável).
 - **FR-013**: No modo pagamento por uso, o sistema MUST avisar a empresa a cada
   **100 notas extras** de que está sendo cobrada por uso.
 - **FR-014**: Ao atingir **franquia + 1.000** emissões no mês, o sistema MUST
   bloquear novas emissões e exigir **liberação manual de um administrador do
   sistema** (operador da plataforma) para prosseguir.
 - **FR-015**: O sistema MUST permitir que um administrador do sistema conceda
-  **liberação manual** a uma empresa bloqueada pelo teto, registrando quem
-  liberou, quando e o efeito da liberação. [NEEDS CLARIFICATION: a liberação
-  concede um novo incremento, remove o teto até o fim do mês, ou exige novo plano?]
+  **liberação manual** a uma empresa bloqueada pelo teto, concedendo um
+  **incremento adicional (+N)** definido pelo operador; a medição **continua** e
+  um novo teto (teto anterior + N) passa a valer no mês. O registro inclui quem
+  liberou, quando e o incremento concedido.
 - **FR-016**: O sistema MUST reiniciar os contadores (franquia e excedente) a
   cada novo mês de competência, conforme o plano vigente.
 - **FR-017**: O sistema MUST permitir solicitar o plano sob demanda, registrando
@@ -248,11 +259,11 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   notas dentro da franquia e de notas extras (overage), comparada à franquia do
   plano e ao teto de +1.000.
 - **Liberação Manual (Override)**: concessão de um administrador do sistema que
-  desbloqueia uma empresa que atingiu o teto. Atributos: quem liberou, quando,
-  efeito/validade.
-- **Administrador do Sistema**: operador da plataforma (papel distinto do `Admin`
-  do tenant) que concede liberações manuais. [NEEDS CLARIFICATION: como esse
-  papel de plataforma é modelado e autenticado.]
+  desbloqueia uma empresa que atingiu o teto, adicionando um **incremento (+N)**
+  ao teto do mês. Atributos: quem liberou, quando, incremento concedido.
+- **Administrador do Sistema**: operador da **plataforma** (backoffice), fora do
+  modelo de tenant, com **RBAC global próprio** e privilégios isolados (Princípio
+  III). Distinto do `Admin` do tenant; concede liberações manuais.
 - **Lead Comercial**: solicitação de plano sob demanda para contato de vendas.
 
 ## Success Criteria *(mandatory)*
@@ -282,8 +293,8 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
 - Cobrança recorrente mensal; Pix tratado conforme suporte do gateway
   (confirmação assíncrona via webhook).
 - **Modelo de cota:** franquia mensal por plano → modo pagamento por uso até
-  +1.000 notas → bloqueio rígido → liberação manual do administrador do sistema.
-  [NEEDS CLARIFICATION: preço da nota extra e quando o excedente é cobrado
-  (fatura seguinte vs. imediata).]
+  +1.000 notas (preço fixo por nota extra, cobrado na fatura seguinte) →
+  bloqueio rígido → liberação manual (+N) do administrador do sistema. O valor
+  unitário da nota extra é parametrizável (decisão comercial).
 - A landing page pública faz parte do frontend (Next.js), separada do app
   autenticado.
