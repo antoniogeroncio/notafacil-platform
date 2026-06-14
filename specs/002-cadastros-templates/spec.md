@@ -8,6 +8,17 @@
 
 **Input**: Epic 2 — O sistema deve armazenar os registros base (clientes, serviços, modelos) para acelerar o preenchimento do faturamento.
 
+## Clarifications
+
+### Session 2026-06-14
+
+Itens de menor impacto resolvidos por **padrão** (sem pergunta dedicada);
+ajustáveis no `/speckit-plan` se necessário:
+
+- D: Campos obrigatórios mínimos → cliente: razão social/nome + documento (CNPJ/CPF); serviço: descrição + valor unitário + classificação fiscal. (Conjunto completo detalhado no plano.)
+- D: Dois clientes com o mesmo documento na mesma empresa → **avisar duplicidade, mas permitir** (não bloquear).
+- D: Salvar template com nome já existente na empresa → **bloquear** nome duplicado (unicidade de nome por empresa).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Cadastrar clientes e serviços da empresa (Priority: P1)
@@ -64,12 +75,13 @@ não guarda cliente nem valor.
 ### Edge Cases
 
 - Cadastro de cliente/serviço com dados obrigatórios faltando: rejeitado com
-  indicação dos campos pendentes. [NEEDS CLARIFICATION: quais campos são
-  obrigatórios para cliente e para serviço.]
-- Dois clientes com o mesmo documento (CNPJ/CPF) na mesma empresa: [NEEDS
-  CLARIFICATION: permitir, bloquear ou apenas avisar duplicidade?]
-- Salvar template com nome já existente na empresa: [NEEDS CLARIFICATION:
-  sobrescrever, versionar ou bloquear?]
+  indicação dos campos pendentes. Obrigatórios mínimos — cliente: razão social/
+  nome + documento (CNPJ/CPF); serviço: descrição + valor unitário +
+  classificação fiscal.
+- Dois clientes com o mesmo documento (CNPJ/CPF) na mesma empresa: o sistema
+  **avisa a duplicidade, mas permite** o cadastro.
+- Salvar template com nome já existente na empresa: o sistema **bloqueia**
+  (nome de template é único por empresa).
 - Remoção de um cliente/serviço referenciado por um template existente: definir
   comportamento (impedir, ou manter o template com snapshot dos dados).
 

@@ -8,6 +8,12 @@
 
 **Input**: Epic 3 — A interface deve suportar tanto a emissão rápida via modelos quanto a digitação livre dos itens da nota.
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: Item livre sem classificação fiscal — bloquear ou validar depois? → A: **Permitir no rascunho**; a classificação fiscal torna-se **obrigatória na validação de faturamento** (antes de enviar ao Focus NFe).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Adicionar itens por catálogo ou por digitação livre (Priority: P1)
@@ -68,8 +74,9 @@ selecionar um cliente associa-o à nota.
 
 ### Edge Cases
 
-- Item livre com classificação fiscal ausente ou inválida: [NEEDS CLARIFICATION:
-  bloquear avanço ou permitir e validar só no faturamento?]
+- Item livre com classificação fiscal ausente ou inválida: **permitido no
+  rascunho**; a validação de faturamento exige classificação fiscal válida em
+  todos os itens antes de enviar ao provedor.
 - Catálogo vazio: a digitação livre deve funcionar normalmente.
 - Valor zero ou negativo em um item: rejeitado.
 - Edição de uma nota iniciada a partir de um template (Epic 2): itens fixos vêm
@@ -96,7 +103,9 @@ selecionar um cliente associa-o à nota.
   quantidades ou valores mudarem.
 - **FR-007**: O sistema MUST permitir vincular um cliente da empresa à nota.
 - **FR-008**: O sistema MUST validar a nota antes do faturamento, exigindo ao
-  menos um item válido e um cliente.
+  menos um item válido, um cliente e **classificação fiscal válida em todos os
+  itens** (inclusive os de entrada livre). Itens livres são aceitos no rascunho
+  sem classificação, mas o faturamento é bloqueado até que ela esteja presente.
 - **FR-009**: O sistema MUST permitir iniciar a emissão a partir de um template
   (Epic 2), com os campos fixos pré-carregados e editáveis.
 - **FR-010**: Itens adicionados de catálogo MUST registrar um snapshot dos dados

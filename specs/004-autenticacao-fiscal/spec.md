@@ -8,6 +8,15 @@
 
 **Input**: Epic 4 — A emissão/transmissão fiscal é **delegada à API do Focus NFe** (https://focusnfe.com.br), que abstrai a complexidade de assinatura ICP-Brasil, formatos e integração com os órgãos emissores por município. O sistema foca nas funcionalidades de produto; o provedor cuida da emissão. A integração é encapsulada atrás de uma abstração para permitir trocar/adicionar provedores no futuro.
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: O certificado A1 é retido pela plataforma ou só repassado ao Focus NFe? → A: **Repassado ao Focus NFe e também retido criptografado** (certificado + senha), para renovação/reenvio sem novo upload.
+- Q: Quais municípios suportar na v1? → A: **Todos os suportados pelo Focus NFe** — a plataforma não restringe; erro acionável quando o provedor não cobrir.
+- Q: Política quando o provedor está indisponível/lento? → A: **Emissão assíncrona com fila + retentativa com backoff**; status via webhook/consulta; nunca trava a UI.
+- D (padrão, sem pergunta): Ambientes do provedor são **por empresa** (flag de ambiente): inicia em **homologação**, promovida a **produção** após validação.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Configurar a empresa para emissão (Priority: P1)
@@ -103,18 +112,18 @@ nota "Processando" e confirmando que o status é atualizado de forma idempotente
 
 - Certificado A1 expirado/senha incorreta no cadastro: empresa permanece inapta,
   mensagem clara, senha nunca exposta.
-- Indisponibilidade temporária do provedor: emissão fica "Processando" com
-  política de retentativa/consulta; nunca trava a UI. [NEEDS CLARIFICATION:
-  retentativa/fila e timeout.]
-- Município/serviço não suportado pelo provedor: erro acionável ao usuário.
-  [NEEDS CLARIFICATION: municípios-alvo na v1.]
+- Indisponibilidade temporária do provedor: a emissão fica "Processando" e é
+  reenviada por uma **fila com retentativa (backoff)**; o status chega por
+  webhook/consulta. A UI nunca trava aguardando o provedor.
+- Município/serviço não suportado pelo provedor: a plataforma **não restringe**
+  município (suporta todos os do Focus NFe); quando o provedor não cobrir,
+  apresenta erro acionável ao usuário.
 - Necessidade futura de outro provedor: a abstração permite adicionar/trocar sem
   alterar o motor de emissão.
-- Onde fica o certificado: [NEEDS CLARIFICATION: o certificado é apenas repassado
-  ao provedor e não retido pela plataforma, ou também armazenado criptografado
-  por nós?]
-- Ambientes: separação entre homologação e produção do provedor. [NEEDS
-  CLARIFICATION: por tenant ou global.]
+- Certificado: além de repassado ao Focus NFe, é **retido criptografado**
+  (certificado + senha) para renovação/reenvio — nunca exposto (Princípio VI).
+- Ambientes: a separação homologação/produção é **por empresa** (flag de
+  ambiente); inicia em homologação e é promovida a produção após validação.
 
 ## Requirements *(mandatory)*
 
@@ -124,7 +133,9 @@ nota "Processando" e confirmando que o status é atualizado de forma idempotente
   provedor de emissão (Focus NFe) a partir dos dados fiscais e do certificado A1.
 - **FR-002**: O sistema MUST tratar certificado, senha de certificado e
   credenciais do provedor como segredos (criptografados em repouso, em memória só
-  no uso), por empresa, e nunca expô-los (Princípio VI).
+  no uso), por empresa, e nunca expô-los (Princípio VI). O certificado e a senha
+  são **retidos criptografados** (além de repassados ao provedor) para renovação/
+  reenvio sem novo upload.
 - **FR-003**: O sistema MUST enviar a nota faturada ao provedor com uma
   referência única e registrar o estado da emissão.
 - **FR-004**: O sistema MUST refletir o resultado da emissão (Processando/
@@ -143,13 +154,23 @@ nota "Processando" e confirmando que o status é atualizado de forma idempotente
   motor de emissão (extensibilidade — Princípio I).
 - **FR-009**: O sistema MUST expor mensagens de erro acionáveis ao usuário, sem
   vazar segredos nem detalhes técnicos internos.
+- **FR-010**: A emissão MUST ser assíncrona, com **fila e retentativa (backoff)**
+  em caso de indisponibilidade/lentidão do provedor; a UI nunca bloqueia
+  aguardando o provedor.
+- **FR-011**: Cada empresa MUST ter um **ambiente** de emissão (homologação/
+  produção); a emissão usa o ambiente vigente, iniciando em homologação e sendo
+  promovida a produção após validação.
+- **FR-012**: O sistema MUST NOT restringir municípios por conta própria; suporta
+  os municípios cobertos pelo Focus NFe e apresenta erro acionável quando um
+  município/serviço não for suportado pelo provedor.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Configuração Fiscal da Empresa**: habilita a emissão. Atributos: estado
   (apta/inapta), validade do certificado, referência da empresa no provedor,
-  ambiente (homologação/produção). Segredos (certificado/senha/credenciais do
-  provedor) tratados conforme Princípio VI. Pertence a uma empresa.
+  ambiente (homologação/produção, inicia em homologação). Segredos (certificado/
+  senha/credenciais do provedor) **retidos criptografados** e tratados conforme
+  Princípio VI. Pertence a uma empresa.
 - **Emissão (Resultado)**: desfecho da emissão de uma nota. Atributos:
   referência, status (Processando/Emitida/Erro/Cancelada), protocolo do órgão,
   artefatos (XML/PDF), mensagem de erro (sem segredos).
@@ -172,7 +193,10 @@ nota "Processando" e confirmando que o status é atualizado de forma idempotente
 
 - Provedor de emissão na v1: **Focus NFe** (abstrai assinatura ICP-Brasil,
   formatos e integração com órgãos por município). Validação automatizada usa o
-  ambiente de homologação do provedor.
+  ambiente de homologação do provedor. Sem restrição de municípios pela
+  plataforma; cobertura é a do provedor.
+- Emissão assíncrona via fila/worker com retentativa (backoff); certificado e
+  senha retidos criptografados para renovação.
 - A montagem/validação da nota provém da feature 003; a cota/assinatura, da
   feature 005.
 - A configuração fiscal é gerida por administradores (papel da feature 001).

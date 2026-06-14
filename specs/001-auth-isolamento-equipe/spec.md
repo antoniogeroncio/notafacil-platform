@@ -8,6 +8,13 @@
 
 **Input**: Epic 1 — O sistema deve garantir o isolamento total de dados entre empresas e permitir que o administrador gerencie os acessos da sua empresa.
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: Modelo de identidade de e-mail/login? → A: **E-mail é identidade global única** na plataforma (cada e-mail = uma conta/usuário), consistente com "1 conta = 1 empresa" (feature 005). A unicidade de e-mail passa a ser **global**, não por empresa.
+- D (padrão, sem pergunta): Matriz de permissões — `Admin` faz tudo na empresa; `Editor` faz cadastros e emissão; `Viewer` é somente leitura (ver FR-008).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Convidar um membro da equipe por e-mail (Priority: P1)
@@ -92,9 +99,10 @@ acessar um recurso de outra empresa é negado.
 
 ### Edge Cases
 
-- Convite para um e-mail que já existe em **outra** empresa: a unicidade é por
-  empresa, não global. [NEEDS CLARIFICATION: confirmar se um mesmo e-mail pode
-  ter contas em múltiplas empresas ou se a identidade de login é global.]
+- E-mail é **identidade global única**: um e-mail corresponde a uma única conta
+  na plataforma. Convite para um e-mail já cadastrado é tratado como conflito
+  (não cria segunda conta). Em v1 (1 conta = 1 empresa) não há o mesmo e-mail em
+  empresas diferentes.
 - Reenvio de convite para um usuário ainda "Pendente": deve renovar/reemitir o
   link sem criar duplicidade.
 - Token de convite adulterado ou inválido: ativação negada sem revelar detalhes.
@@ -113,16 +121,20 @@ acessar um recurso de outra empresa é negado.
 - **FR-003**: O sistema MUST gerar um link/token de convite com validade de 48
   horas e disparar um e-mail de ativação com template profissional.
 - **FR-004**: O sistema MUST impedir o cadastro de um e-mail já existente na
-  mesma empresa, retornando um erro de conflito.
+  **plataforma** (unicidade global de e-mail/login), retornando um erro de
+  conflito.
 - **FR-005**: O sistema MUST permitir que o convidado defina sua senha via link
   válido, transicionando o status para "Ativo".
 - **FR-006**: O sistema MUST rejeitar ativação por link expirado, já usado ou
   inválido.
 - **FR-007**: O sistema MUST autenticar usuários ativos e estabelecer um
   contexto de sessão que carregue a empresa e o papel do usuário.
-- **FR-008**: O sistema MUST restringir ações por papel (ex.: apenas `Admin`
-  convida/gerencia equipe; `Viewer` tem acesso somente leitura). [NEEDS
-  CLARIFICATION: matriz completa de permissões por papel.]
+- **FR-008**: O sistema MUST restringir ações por papel conforme a matriz:
+  - `Admin`: tudo na sua empresa — gerencia equipe, cadastros (Epic 2), emissão
+    (Epics 3/4), configuração fiscal (Epic 4) e assinatura/cobrança (Epic 5).
+  - `Editor`: cadastros e emissão de notas; **não** gerencia equipe, configuração
+    fiscal nem assinatura/cobrança.
+  - `Viewer`: somente leitura (consulta cadastros e notas); sem criar/editar/emitir.
 - **FR-009**: O sistema MUST filtrar todo acesso a dados pela empresa do
   contexto autenticado, de forma central e por padrão.
 - **FR-010**: O sistema MUST derivar o identificador de empresa exclusivamente
@@ -136,8 +148,9 @@ acessar um recurso de outra empresa é negado.
 - **Empresa (Tenant)**: a organização cliente da plataforma. Atributos:
   identidade, razão social, CNPJ, data de criação. Raiz do isolamento de dados.
 - **Usuário**: pessoa com acesso ao sistema, pertencente a uma empresa.
-  Atributos: nome, e-mail, papel (`Admin`/`Editor`/`Viewer`), status
-  (`Pendente`/`Ativo`). Relaciona-se a exatamente uma empresa.
+  Atributos: nome, e-mail (**único globalmente** — identidade de login), papel
+  (`Admin`/`Editor`/`Viewer`), status (`Pendente`/`Ativo`). Relaciona-se a
+  exatamente uma empresa.
 - **Convite**: vínculo temporário que permite a um usuário pendente ativar sua
   conta. Atributos: validade (48h), estado (válido/expirado/usado).
 
@@ -151,7 +164,7 @@ acessar um recurso de outra empresa é negado.
   empresa) são negadas, sem vazamento de existência ou conteúdo.
 - **SC-003**: Convites expiram corretamente: 0% dos links com mais de 48 horas
   permitem ativação.
-- **SC-004**: 0% de e-mails duplicados criados dentro da mesma empresa.
+- **SC-004**: 0% de e-mails duplicados criados na plataforma (unicidade global).
 - **SC-005**: Nenhum segredo (senha, token) aparece em respostas de API ou logs
   em qualquer cenário testado.
 
