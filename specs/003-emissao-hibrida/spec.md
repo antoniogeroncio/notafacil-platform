@@ -127,7 +127,10 @@ selecionar um cliente associa-o à nota.
 ## Assumptions
 
 - O catálogo e os clientes provêm da feature 002.
-- Esta feature cobre a montagem/validação da nota; a assinatura e a transmissão
-  fiscal são tratadas na feature 004.
+- Esta feature cobre a montagem/validação da nota; a emissão/transmissão fiscal
+  (via provedor Focus NFe) é tratada na feature 004.
+- O avanço para faturamento está sujeito à assinatura ativa e à cota mensal do
+  plano (feature 005): se a empresa não tem plano ativo ou esgotou a cota, o
+  sistema bloqueia e orienta upgrade/regularização antes de enviar ao provedor.
 - As regras de cálculo de impostos/retenções aplicáveis serão detalhadas no
   plano e podem depender da configuração fiscal da empresa.

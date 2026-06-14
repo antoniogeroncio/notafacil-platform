@@ -161,4 +161,8 @@ acessar um recurso de outra empresa é negado.
 - A política mínima de senha será definida no plano (comprimento/complexidade).
 - A identidade de empresa do usuário é estabelecida no login e não muda durante
   a sessão.
+- O **primeiro Admin** e a **Empresa** nascem pelo cadastro self-service (PLG,
+  feature 005): o usuário cria a conta pela landing, cadastra a empresa após
+  logar e vira `Admin`. Os convites desta feature cobrem os **membros adicionais**
+  da equipe; não são o único caminho de entrada.
 - SSO/OAuth externo está fora de escopo na v1.

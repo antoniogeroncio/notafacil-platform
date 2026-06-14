@@ -36,17 +36,36 @@
   API criptografados em repouso; descriptografados apenas em memória no uso.
   Hash de senha de usuário com algoritmo forte (ex.: bcrypt/argon2).
 
-## Integração Fiscal (Strategy)
+## Emissão Fiscal (Focus NFe)
 
-Padrão **Strategy** selecionado por tenant conforme `authType`:
+A emissão/transmissão é **delegada à API do Focus NFe** (https://focusnfe.com.br),
+que abstrai a assinatura ICP-Brasil, os formatos e a integração com os órgãos
+emissores por município. O produto foca em funcionalidades; o provedor cuida da
+emissão.
 
-- `CERTIFICATE` → `CertificateProvider`: descriptografa o A1 em memória, aplica
-  assinatura ICP-Brasil no XML e transmite.
-- `API_CREDENTIALS` → `ApiCredentialsProvider`: injeta credenciais (token ou
-  usuário/senha) nos headers da requisição REST e transmite sem assinatura A1.
+- **Abstração:** o motor de emissão depende de uma **interface**
+  `FiscalEmissionProvider`; a v1 implementa `FocusNFeProvider` (`pkg/focusnfe`).
+  Trocar/adicionar provedor não altera o motor (extensibilidade — Princípio I).
+- **Fluxo:** registrar a empresa no provedor (certificado A1 + dados fiscais) →
+  enviar a nota com referência única → emissão **assíncrona** → status via
+  consulta e/ou **webhook** (idempotente) → guardar protocolo, XML e PDF/DANFSe.
+- **Segredos (Princípio VI):** certificado A1, senha e token do provedor são
+  criptografados em repouso e nunca expostos. [Definir no plano: o certificado é
+  apenas repassado ao Focus NFe ou também retido por nós.]
+- **Ambientes:** homologação (testes automatizados) e produção do provedor.
 
-O motor de emissão depende da **interface** do provedor; adicionar um novo
-provedor não altera o motor (extensibilidade — Epic 4 / Princípio I).
+## Cobrança / Pagamentos (PagSeguro) — Epic 5
+
+- **Gateway:** **PagSeguro**, encapsulado como integração de infra (`pkg/pagseguro`)
+  injetada no Service (Princípio I). Cartão de crédito recorrente, Pix e demais
+  formas do gateway.
+- **PCI / segredos (Princípio VI):** **não** armazenar dados de cartão; usar
+  tokenização/checkout do gateway; guardar apenas referências não sensíveis.
+- **Webhooks idempotentes:** notificações do PagSeguro atualizam status de
+  pagamento/assinatura; reprocessar o mesmo evento não muda o resultado.
+- **Planos & medição:** assinatura por empresa/CNPJ; cota mensal de emissões por
+  plano (100 / 400 / 4.000 / sob demanda). O contador de uso por mês de
+  competência é checado antes de faturar (gating em Epics 3/4).
 
 ## Frontend (Next.js / React)
 

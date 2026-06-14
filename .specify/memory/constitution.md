@@ -1,6 +1,6 @@
 # Constituição de Engenharia — NotaFácil Platform
 
-**Versão**: 2.0.0 | **Ratificada**: 2026-06-14 | **Última Emenda**: 2026-06-14
+**Versão**: 2.0.1 | **Ratificada**: 2026-06-14 | **Última Emenda**: 2026-06-14
 
 > Este documento define os **princípios inegociáveis de engenharia de software** que regem todo o desenvolvimento da plataforma multi-tenant de emissão de NFS-e. Os princípios são **agnósticos de tecnologia**: aplicam-se independente de linguagem, framework ou plataforma. As escolhas tecnológicas concretas que implementam estes princípios estão em [`tech-stack.md`](tech-stack.md).
 >
@@ -34,7 +34,7 @@ Controller  →  Service  →  Repository
 
 **Injeção de Dependência** é obrigatória para desacoplar todas as camadas. Importações que violem a hierarquia de camadas são falha bloqueante de code review.
 
-**Integrações externas** (provedores de transmissão fiscal, gateways, mensageria, e-mail) são encapsuladas em classes de infraestrutura injetadas como dependência do Service. Nenhum SDK externo deve ser instanciado diretamente dentro de um Service ou Controller. O motor de emissão fiscal usa o padrão **Strategy** para selecionar o provedor por tenant (ver [`tech-stack.md`](tech-stack.md)).
+**Integrações externas** (provedor de emissão fiscal, gateway de pagamento, mensageria, e-mail) são encapsuladas em classes de infraestrutura injetadas como dependência do Service. Nenhum SDK externo deve ser instanciado diretamente dentro de um Service ou Controller. O motor de emissão depende de uma **abstração de provedor de emissão** (v1: Focus NFe) e o de cobrança, de uma abstração de gateway (v1: PagSeguro), permitindo trocar o provedor sem alterar o motor (ver [`tech-stack.md`](tech-stack.md)).
 
 ---
 

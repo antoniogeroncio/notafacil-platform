@@ -1,4 +1,4 @@
-# Feature Specification: Estratégia de Autenticação Fiscal Modular
+# Feature Specification: Integração de Emissão Fiscal via Focus NFe
 
 **Feature Branch**: `004-autenticacao-fiscal`
 
@@ -6,133 +6,172 @@
 
 **Status**: Draft
 
-**Input**: Epic 4 — O motor de faturamento deve decidir como se autenticar e transmitir a nota conforme a configuração fiscal de cada empresa (certificado A1 vs credenciais de API), de forma modular e extensível.
+**Input**: Epic 4 — A emissão/transmissão fiscal é **delegada à API do Focus NFe** (https://focusnfe.com.br), que abstrai a complexidade de assinatura ICP-Brasil, formatos e integração com os órgãos emissores por município. O sistema foca nas funcionalidades de produto; o provedor cuida da emissão. A integração é encapsulada atrás de uma abstração para permitir trocar/adicionar provedores no futuro.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Configurar o método de autenticação fiscal da empresa (Priority: P1)
+### User Story 1 - Configurar a empresa para emissão (Priority: P1)
 
-Um administrador configura como a sua empresa se autentica junto ao órgão
-emissor: ou enviando um certificado digital A1 (com senha), ou informando
-credenciais de API (ex.: chave, cliente/segredo ou usuário/senha). Essas
-credenciais são segredos e ficam protegidas.
+Um administrador habilita sua empresa para emitir, fornecendo os dados fiscais e
+o certificado digital A1 (com senha). O sistema registra a empresa no provedor de
+emissão (Focus NFe). O certificado e a senha são segredos e ficam protegidos.
 
-**Why this priority**: Sem uma configuração fiscal válida nenhuma nota pode ser
-transmitida. É pré-requisito de todo faturamento e define qual estratégia será
-usada.
+**Why this priority**: Sem a empresa habilitada no provedor, nenhuma nota pode
+ser emitida. É pré-requisito de todo faturamento.
 
-**Independent Test**: Pode ser testado configurando cada método para uma empresa
-e confirmando que o segredo é armazenado de forma protegida e nunca retornado em
-texto puro.
+**Independent Test**: Pode ser testado configurando uma empresa (com certificado
+no ambiente de teste do provedor) e confirmando que ela fica apta a emitir e que
+nenhum segredo é retornado em texto puro.
 
 **Acceptance Scenarios**:
 
-1. **Given** um administrador na Empresa A, **When** ele configura autenticação
-   por certificado A1 enviando o arquivo e a senha, **Then** o certificado e a
-   senha são armazenados protegidos (criptografados/hash) e associados à Empresa
-   A, **And** nunca são retornados em texto puro em respostas ou logs.
-2. **Given** um administrador na Empresa A, **When** ele configura autenticação
-   por credenciais de API, **Then** as credenciais são armazenadas protegidas e
-   associadas à Empresa A.
-3. **Given** uma configuração fiscal existente, **When** qualquer usuário
-   consulta a configuração, **Then** o sistema indica o método ativo sem expor
-   os valores secretos.
+1. **Given** um administrador na Empresa A, **When** ele envia o certificado A1 e
+   a senha e os dados fiscais, **Then** o sistema registra/atualiza a empresa no
+   provedor de emissão e marca a Empresa A como apta a emitir, **And** os
+   segredos são tratados de forma protegida e nunca retornados em texto puro.
+2. **Given** um certificado inválido/expirado ou senha incorreta, **When** o
+   provedor recusa o cadastro, **Then** o sistema reporta o erro de forma
+   compreensível, sem expor a senha, e a empresa permanece inapta.
+3. **Given** uma configuração existente, **When** qualquer usuário consulta a
+   configuração fiscal, **Then** o sistema indica o estado (apta/inapta, validade
+   do certificado) sem expor os valores secretos.
 
 ---
 
-### User Story 2 - Transmitir a nota pela estratégia correta (Priority: P1)
+### User Story 2 - Emitir a nota via provedor (Priority: P1)
 
-Ao faturar uma nota, o motor seleciona automaticamente a estratégia de
-autenticação/transmissão conforme o método configurado na empresa: assinatura
-ICP-Brasil com o certificado A1, ou transmissão via credenciais de API sem
-assinatura A1. O usuário não precisa saber qual caminho foi usado.
+Ao faturar uma nota válida, o sistema a envia ao provedor (Focus NFe), que
+processa a emissão de forma assíncrona. O sistema acompanha o resultado e
+apresenta ao usuário o status (autorizada, processando, erro), guardando os
+artefatos retornados (protocolo, XML/PDF/DANFSe).
 
 **Why this priority**: É a entrega central da Epic — efetivar a emissão fiscal.
-Depende da configuração (US1) e da nota montada (Epic 3).
+Depende da configuração (US1), da nota montada (Epic 3) e da cota/assinatura
+ativa (Epic 5).
 
-**Independent Test**: Pode ser testado faturando uma nota em uma empresa
-configurada com A1 e outra configurada com API, verificando que cada uma usa o
-caminho de transmissão correto e produz um resultado de emissão.
+**Independent Test**: Pode ser testado faturando uma nota no ambiente de teste do
+provedor e verificando que o sistema reflete o status retornado e armazena a
+referência da emissão.
 
 **Acceptance Scenarios**:
 
-1. **Given** uma empresa configurada com certificado A1, **When** o sistema
-   processa o faturamento de uma nota válida, **Then** ele usa a estratégia de
-   certificado: descriptografa o A1 em memória, aplica a assinatura ICP-Brasil
-   ao documento e o transmite.
-2. **Given** uma empresa configurada com credenciais de API, **When** o sistema
-   processa o faturamento de uma nota válida, **Then** ele usa a estratégia de
-   credenciais: autentica via as credenciais e transmite o documento sem
-   assinatura A1.
-3. **Given** uma empresa sem configuração fiscal válida, **When** o usuário tenta
-   faturar, **Then** o sistema impede a transmissão e orienta a configurar a
-   autenticação fiscal.
-4. **Given** uma falha/recusa do órgão emissor na transmissão, **When** o
-   sistema recebe o erro, **Then** ele registra o resultado e expõe ao usuário um
-   status compreensível, sem vazar segredos.
+1. **Given** uma empresa apta, com assinatura ativa e cota disponível (Epic 5),
+   **When** o usuário fatura uma nota válida, **Then** o sistema a envia ao
+   provedor com uma referência única e marca a nota como "Processando".
+2. **Given** uma nota enviada ao provedor, **When** o provedor retorna
+   autorização, **Then** o sistema marca a nota como "Emitida" e guarda
+   protocolo e artefatos (XML/PDF) para consulta/download.
+3. **Given** uma empresa inapta (sem configuração válida no provedor), **When** o
+   usuário tenta faturar, **Then** o sistema bloqueia e orienta a configurar a
+   emissão.
+4. **Given** uma empresa sem assinatura ativa ou com cota mensal esgotada (Epic
+   5), **When** o usuário tenta faturar, **Then** o sistema bloqueia e orienta
+   upgrade/regularização — sem enviar ao provedor.
+5. **Given** uma recusa/erro do provedor (ex.: dados fiscais inválidos), **When**
+   o sistema recebe o erro, **Then** ele marca a nota como "Erro", registra a
+   mensagem acionável e não consome cota indevidamente.
+
+---
+
+### User Story 3 - Acompanhar status assíncrono via webhook (Priority: P2)
+
+Como a emissão é assíncrona, o sistema recebe atualizações de status do provedor
+(via webhook/callback) e mantém o estado da nota em sincronia, inclusive para
+cancelamentos.
+
+**Why this priority**: Garante que o status exibido reflita a realidade do órgão
+emissor sem o usuário precisar reabrir/atualizar manualmente; importante mas
+posterior ao caminho feliz de emissão.
+
+**Independent Test**: Pode ser testado simulando um callback do provedor para uma
+nota "Processando" e confirmando que o status é atualizado de forma idempotente.
+
+**Acceptance Scenarios**:
+
+1. **Given** uma nota "Processando", **When** o sistema recebe o callback de
+   autorização do provedor, **Then** atualiza a nota para "Emitida" e anexa os
+   artefatos.
+2. **Given** um callback recebido mais de uma vez (duplicado/fora de ordem),
+   **When** o sistema o processa, **Then** o resultado é **idempotente** (não
+   duplica emissão nem corrompe o estado).
+3. **Given** uma solicitação de cancelamento aceita pelo provedor, **When** o
+   callback chega, **Then** a nota passa a "Cancelada".
 
 ### Edge Cases
 
-- Certificado A1 expirado ou senha incorreta: transmissão bloqueada com
-  mensagem clara, sem expor a senha.
-- Credenciais de API inválidas/revogadas: falha tratada e reportada.
-- Troca do método de autenticação de uma empresa com notas em andamento: notas
-  já transmitidas não são afetadas; novas usam o método atual.
-- Necessidade de um novo provedor/órgão emissor no futuro: a arquitetura deve
-  permitir adicionar uma estratégia sem alterar o motor de emissão. [NEEDS
-  CLARIFICATION: lista de órgãos/municípios a suportar na v1.]
-- Indisponibilidade temporária do órgão emissor: [NEEDS CLARIFICATION: política
-  de retentativa/fila para transmissão.]
+- Certificado A1 expirado/senha incorreta no cadastro: empresa permanece inapta,
+  mensagem clara, senha nunca exposta.
+- Indisponibilidade temporária do provedor: emissão fica "Processando" com
+  política de retentativa/consulta; nunca trava a UI. [NEEDS CLARIFICATION:
+  retentativa/fila e timeout.]
+- Município/serviço não suportado pelo provedor: erro acionável ao usuário.
+  [NEEDS CLARIFICATION: municípios-alvo na v1.]
+- Necessidade futura de outro provedor: a abstração permite adicionar/trocar sem
+  alterar o motor de emissão.
+- Onde fica o certificado: [NEEDS CLARIFICATION: o certificado é apenas repassado
+  ao provedor e não retido pela plataforma, ou também armazenado criptografado
+  por nós?]
+- Ambientes: separação entre homologação e produção do provedor. [NEEDS
+  CLARIFICATION: por tenant ou global.]
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Cada empresa MUST poder configurar exatamente um método de
-  autenticação fiscal ativo: certificado A1 ou credenciais de API.
-- **FR-002**: O sistema MUST armazenar certificados, senhas de certificado e
-  credenciais de API de forma protegida (criptografados/hash) e por empresa.
-- **FR-003**: O sistema MUST NOT expor segredos fiscais em respostas de API,
-  logs, mensagens de erro ou telemetria.
-- **FR-004**: O motor de faturamento MUST selecionar a estratégia de
-  autenticação/transmissão a partir do método configurado na empresa.
-- **FR-005**: Na estratégia de certificado, o sistema MUST descriptografar o A1
-  apenas em memória, aplicar a assinatura ICP-Brasil ao documento e transmiti-lo.
-- **FR-006**: Na estratégia de credenciais de API, o sistema MUST autenticar com
-  as credenciais e transmitir o documento sem assinatura A1.
-- **FR-007**: O sistema MUST impedir o faturamento quando não há configuração
-  fiscal válida.
-- **FR-008**: O sistema MUST registrar o resultado da transmissão (sucesso/erro)
-  e expor um status compreensível ao usuário.
-- **FR-009**: A arquitetura MUST permitir adicionar novas estratégias de
-  provedor sem modificar o motor de emissão (extensibilidade).
+- **FR-001**: O sistema MUST habilitar uma empresa para emissão registrando-a no
+  provedor de emissão (Focus NFe) a partir dos dados fiscais e do certificado A1.
+- **FR-002**: O sistema MUST tratar certificado, senha de certificado e
+  credenciais do provedor como segredos (criptografados em repouso, em memória só
+  no uso), por empresa, e nunca expô-los (Princípio VI).
+- **FR-003**: O sistema MUST enviar a nota faturada ao provedor com uma
+  referência única e registrar o estado da emissão.
+- **FR-004**: O sistema MUST refletir o resultado da emissão (Processando/
+  Emitida/Erro/Cancelada) e armazenar os artefatos retornados (protocolo, XML,
+  PDF/DANFSe) para consulta e download.
+- **FR-005**: O sistema MUST impedir o faturamento quando a empresa está inapta
+  (sem configuração válida no provedor).
+- **FR-006**: O sistema MUST impedir o faturamento quando a assinatura não está
+  ativa ou a cota mensal do plano está esgotada (integração com Epic 5), sem
+  enviar a nota ao provedor.
+- **FR-007**: O sistema MUST receber e processar de forma **idempotente** os
+  callbacks/webhooks de status do provedor.
+- **FR-008**: O sistema MUST encapsular a integração atrás de uma abstração de
+  provedor de emissão, permitindo adicionar/trocar o provedor sem modificar o
+  motor de emissão (extensibilidade — Princípio I).
+- **FR-009**: O sistema MUST expor mensagens de erro acionáveis ao usuário, sem
+  vazar segredos nem detalhes técnicos internos.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Configuração Fiscal da Empresa**: define como a empresa se autentica.
-  Atributos: tipo de autenticação (`CERTIFICATE` | `API_CREDENTIALS`),
-  certificado A1 criptografado, hash da senha do certificado, e/ou credenciais
-  de API (ex.: chave, cliente, segredo). Pertence a uma empresa.
-- **Resultado de Emissão**: registro do desfecho da transmissão de uma nota.
-  Atributos: status, identificador de protocolo/retorno do órgão (quando
-  houver), mensagem de erro (sem segredos).
+- **Configuração Fiscal da Empresa**: habilita a emissão. Atributos: estado
+  (apta/inapta), validade do certificado, referência da empresa no provedor,
+  ambiente (homologação/produção). Segredos (certificado/senha/credenciais do
+  provedor) tratados conforme Princípio VI. Pertence a uma empresa.
+- **Emissão (Resultado)**: desfecho da emissão de uma nota. Atributos:
+  referência, status (Processando/Emitida/Erro/Cancelada), protocolo do órgão,
+  artefatos (XML/PDF), mensagem de erro (sem segredos).
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% das notas faturadas usam a estratégia correspondente ao método
-  configurado na sua empresa.
+- **SC-001**: 100% das notas faturadas por empresas aptas e dentro da cota são
+  enviadas ao provedor e têm seu status refletido ao usuário.
 - **SC-002**: 0% de exposição de segredos fiscais em respostas, logs ou
   mensagens, em qualquer cenário testado.
-- **SC-003**: Tentativas de faturar sem configuração válida são bloqueadas em
-  100% dos casos com orientação ao usuário.
-- **SC-004**: Adicionar um novo provedor de transmissão não exige alteração no
-  motor de emissão (verificável por inspeção de design e testes).
+- **SC-003**: Tentativas de faturar com empresa inapta, assinatura inativa ou
+  cota esgotada são bloqueadas em 100% dos casos, com orientação.
+- **SC-004**: 100% dos callbacks do provedor processados de forma idempotente.
+- **SC-005**: Trocar o provedor de emissão não exige alterar o motor de emissão
+  (verificável por inspeção de design e testes).
 
 ## Assumptions
 
-- A montagem/validação da nota provém da feature 003.
+- Provedor de emissão na v1: **Focus NFe** (abstrai assinatura ICP-Brasil,
+  formatos e integração com órgãos por município). Validação automatizada usa o
+  ambiente de homologação do provedor.
+- A montagem/validação da nota provém da feature 003; a cota/assinatura, da
+  feature 005.
 - A configuração fiscal é gerida por administradores (papel da feature 001).
-- Os formatos de documento fiscal e os endpoints dos órgãos emissores serão
-  detalhados no plano, conforme os municípios-alvo.
+- Endpoints, formatos de payload e eventos de webhook do Focus NFe serão
+  detalhados no plano (`plan.md`).

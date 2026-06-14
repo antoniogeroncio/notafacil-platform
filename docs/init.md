@@ -16,7 +16,8 @@
 | Epic 1 | [`specs/001-auth-isolamento-equipe/spec.md`](../specs/001-auth-isolamento-equipe/spec.md) | Autenticação, isolamento multi-tenant e gestão de equipe |
 | Epic 2 | [`specs/002-cadastros-templates/spec.md`](../specs/002-cadastros-templates/spec.md) | Clientes, catálogo de serviços e templates de nota |
 | Epic 3 | [`specs/003-emissao-hibrida/spec.md`](../specs/003-emissao-hibrida/spec.md) | Motor de emissão híbrida (catálogo + digitação livre) |
-| Epic 4 | [`specs/004-autenticacao-fiscal/spec.md`](../specs/004-autenticacao-fiscal/spec.md) | Estratégia modular de autenticação/transmissão fiscal |
+| Epic 4 | [`specs/004-autenticacao-fiscal/spec.md`](../specs/004-autenticacao-fiscal/spec.md) | Emissão fiscal delegada ao provedor Focus NFe (abstraído) |
+| Epic 5 | [`specs/005-plg-planos-cobranca/spec.md`](../specs/005-plg-planos-cobranca/spec.md) | PLG: cadastro self-service, planos por volume e cobrança (PagSeguro) |
 
 ## Como o conteúdo foi reorganizado (SDD)
 
