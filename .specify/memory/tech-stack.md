@@ -50,8 +50,13 @@ provedor não altera o motor (extensibilidade — Epic 4 / Princípio I).
 
 ## Frontend (Next.js / React)
 
-- **Framework:** Next.js (App Router) + TypeScript, sem `any`. UI com
-  shadcn/ui. Páginas interativas marcadas com `'use client'`.
+- **Framework:** Next.js (App Router) + TypeScript, sem `any`. Páginas
+  interativas marcadas com `'use client'`.
+- **Design/UX:** UI com **shadcn/ui + Tailwind**, **mobile-first responsivo**,
+  **acessível (WCAG AA)** e com **dark mode** desde o início. Layout moderno e
+  sóbrio (SaaS fiscal B2B). As diretrizes operacionais de design (tokens,
+  estados de tela, UX de formulários, padrões fiscais) vivem na skill
+  `ux-design`.
 - **Camadas (Princípio XV):** `Component/Page → Hook/Store → Repository`. A Page
   nunca chama `lib/api/` diretamente.
 - **Organização:** `frontend/app/(dashboard)/<feature>/page.tsx` (View),
