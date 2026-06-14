@@ -129,8 +129,10 @@ selecionar um cliente associa-o à nota.
 - O catálogo e os clientes provêm da feature 002.
 - Esta feature cobre a montagem/validação da nota; a emissão/transmissão fiscal
   (via provedor Focus NFe) é tratada na feature 004.
-- O avanço para faturamento está sujeito à assinatura ativa e à cota mensal do
-  plano (feature 005): se a empresa não tem plano ativo ou esgotou a cota, o
-  sistema bloqueia e orienta upgrade/regularização antes de enviar ao provedor.
+- O avanço para faturamento está sujeito à assinatura ativa e à política de cota
+  do plano (feature 005): sem plano ativo, bloqueia; acima da franquia, segue em
+  modo pagamento por uso até o teto (+1.000), quando bloqueia até liberação
+  manual do administrador do sistema. A orientação é exibida antes de enviar ao
+  provedor.
 - As regras de cálculo de impostos/retenções aplicáveis serão detalhadas no
   plano e podem depender da configuração fiscal da empresa.

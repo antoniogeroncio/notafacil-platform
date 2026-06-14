@@ -64,9 +64,11 @@ referência da emissão.
 3. **Given** uma empresa inapta (sem configuração válida no provedor), **When** o
    usuário tenta faturar, **Then** o sistema bloqueia e orienta a configurar a
    emissão.
-4. **Given** uma empresa sem assinatura ativa ou com cota mensal esgotada (Epic
-   5), **When** o usuário tenta faturar, **Then** o sistema bloqueia e orienta
-   upgrade/regularização — sem enviar ao provedor.
+4. **Given** uma empresa sem assinatura ativa, ou que atingiu o teto mensal de
+   emissões (franquia + 1.000 sem liberação manual) (Epic 5), **When** o usuário
+   tenta faturar, **Then** o sistema bloqueia e orienta regularização/liberação —
+   sem enviar ao provedor. (Acima da franquia, mas abaixo do teto, a emissão é
+   permitida em modo pagamento por uso.)
 5. **Given** uma recusa/erro do provedor (ex.: dados fiscais inválidos), **When**
    o sistema recebe o erro, **Then** ele marca a nota como "Erro", registra a
    mensagem acionável e não consome cota indevidamente.
@@ -131,8 +133,9 @@ nota "Processando" e confirmando que o status é atualizado de forma idempotente
 - **FR-005**: O sistema MUST impedir o faturamento quando a empresa está inapta
   (sem configuração válida no provedor).
 - **FR-006**: O sistema MUST impedir o faturamento quando a assinatura não está
-  ativa ou a cota mensal do plano está esgotada (integração com Epic 5), sem
-  enviar a nota ao provedor.
+  ativa ou quando a empresa atingiu o teto mensal de emissões (franquia + 1.000
+  sem liberação manual) (integração com Epic 5), sem enviar a nota ao provedor.
+  Acima da franquia e abaixo do teto, a emissão segue em modo pagamento por uso.
 - **FR-007**: O sistema MUST receber e processar de forma **idempotente** os
   callbacks/webhooks de status do provedor.
 - **FR-008**: O sistema MUST encapsular a integração atrás de uma abstração de

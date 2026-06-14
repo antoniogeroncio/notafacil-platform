@@ -63,9 +63,13 @@ emissão.
   tokenização/checkout do gateway; guardar apenas referências não sensíveis.
 - **Webhooks idempotentes:** notificações do PagSeguro atualizam status de
   pagamento/assinatura; reprocessar o mesmo evento não muda o resultado.
-- **Planos & medição:** assinatura por empresa/CNPJ; cota mensal de emissões por
-  plano (100 / 400 / 4.000 / sob demanda). O contador de uso por mês de
-  competência é checado antes de faturar (gating em Epics 3/4).
+- **Planos & medição:** assinatura recorrente por empresa/CNPJ; franquia mensal
+  por plano (100 / 400 / 4.000 / sob demanda). Política de cota: **só emite com
+  plano ativo**; acima da franquia → **pagamento por uso** (aviso a cada 100
+  notas extras) até o teto de **franquia + 1.000**; além do teto, **bloqueio**
+  que só é liberado por **administrador do sistema** (papel de plataforma,
+  distinto do `Admin` do tenant). Medição por mês de competência, checada antes
+  de faturar (gating em Epics 3/4).
 
 ## Frontend (Next.js / React)
 

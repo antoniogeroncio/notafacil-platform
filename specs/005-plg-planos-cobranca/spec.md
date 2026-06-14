@@ -89,32 +89,45 @@ pagamento, sem armazenar dados sensíveis de cartão.
 
 ---
 
-### User Story 4 - Respeitar o limite de emissões do plano (Priority: P2)
+### User Story 4 - Franquia, pagamento por uso e teto de emissões (Priority: P2)
 
-Cada plano define um teto de notas por mês por CNPJ. Conforme a empresa emite, o
-sistema contabiliza o uso e impede emissões acima do limite contratado,
-orientando o upgrade.
+A emissão só é permitida com **plano ativo**. Cada plano dá uma **franquia**
+mensal de notas por CNPJ. Ao ultrapassar a franquia, a empresa entra em
+**modo pagamento por uso (overage)**: continua emitindo, mas cada nota extra é
+cobrada por uso, e a cada **100 notas extras** o sistema **avisa** que está nesse
+modo. Ao atingir **1.000 notas além da franquia**, a emissão é **bloqueada** e só
+volta com **liberação manual de um administrador do sistema** (operador da
+plataforma).
 
 **Why this priority**: É o que dá sentido econômico aos planos (cobrança por
-volume). Depende da emissão (Epics 3/4) e da assinatura (US3).
+volume + excedente). Depende da emissão (Epics 3/4) e da assinatura (US3).
 
-**Independent Test**: Pode ser testado emitindo até o limite de um plano e
-confirmando que a próxima emissão é bloqueada/orientada a upgrade, e que o
-contador zera no novo mês de competência.
+**Independent Test**: Pode ser testado emitindo dentro da franquia, atravessando
+para o modo pagamento por uso (verificando o aviso a cada 100 extras), atingindo
+o teto de +1.000 (verificando o bloqueio) e confirmando que o contador zera no
+novo mês de competência.
 
 **Acceptance Scenarios**:
 
-1. **Given** uma empresa com assinatura ativa e uso abaixo do limite mensal,
-   **When** ela emite uma nota, **Then** a emissão é permitida e o contador de
-   uso do mês é incrementado.
-2. **Given** uma empresa que atingiu o limite mensal do seu plano, **When** ela
-   tenta emitir outra nota, **Then** o sistema bloqueia e oferece upgrade de
-   plano. [NEEDS CLARIFICATION: permitir excedente cobrado (overage) ou bloquear
-   estritamente?]
-3. **Given** a virada do mês de competência, **When** um novo mês começa, **Then**
-   o contador de uso reinicia conforme o limite do plano.
-4. **Given** uma assinatura inadimplente ou cancelada, **When** a empresa tenta
-   emitir, **Then** a emissão é bloqueada com orientação de regularização.
+1. **Given** uma empresa com assinatura **ativa** e uso abaixo da franquia,
+   **When** ela emite uma nota, **Then** a emissão é permitida e o contador do
+   mês é incrementado.
+2. **Given** uma assinatura **inativa** (inadimplente/cancelada), **When** a
+   empresa tenta emitir, **Then** a emissão é bloqueada com orientação de
+   regularização — independentemente da franquia restante.
+3. **Given** uma empresa que **ultrapassou a franquia** mas está dentro de +1.000,
+   **When** ela emite uma nota, **Then** a emissão é permitida em **modo
+   pagamento por uso**, a nota extra é registrada para cobrança, **And** a cada
+   100 notas extras o sistema avisa a empresa de que está no modo pagamento por
+   uso.
+4. **Given** uma empresa que atingiu **franquia + 1.000** emissões no mês,
+   **When** ela tenta emitir outra nota, **Then** o sistema **bloqueia** e informa
+   que é necessária liberação manual do administrador do sistema.
+5. **Given** uma empresa bloqueada por atingir o teto, **When** um **administrador
+   do sistema** concede liberação manual, **Then** a empresa volta a poder emitir
+   conforme a política da liberação.
+6. **Given** a virada do mês de competência, **When** um novo mês começa, **Then**
+   os contadores de franquia e de excedente reiniciam.
 
 ---
 
@@ -178,19 +191,34 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   assinatura.
 - **FR-009**: O sistema MUST manter o estado da assinatura por empresa
   (`Ativa`, `Inadimplente`, `Cancelada`, etc.) e o ciclo/renovação.
-- **FR-010**: O sistema MUST contabilizar o número de notas emitidas por CNPJ por
-  mês de competência (medição de uso).
-- **FR-011**: O sistema MUST bloquear a emissão quando o uso do mês atinge o
-  limite do plano ou quando a assinatura não está ativa, orientando upgrade/
-  regularização (integra-se às Epics 3/4).
-- **FR-012**: O sistema MUST reiniciar a contagem de uso a cada novo mês de
-  competência, conforme o limite vigente do plano.
-- **FR-013**: O sistema MUST permitir solicitar o plano sob demanda, registrando
+- **FR-010**: O sistema MUST contabilizar, por CNPJ e por mês de competência, as
+  notas emitidas, distinguindo as que estão **dentro da franquia** das **extras
+  (overage)**.
+- **FR-011**: O sistema MUST permitir emissão **apenas com assinatura ativa**;
+  com assinatura inativa, MUST bloquear independentemente da franquia, orientando
+  regularização.
+- **FR-012**: Ultrapassada a franquia mensal, o sistema MUST continuar permitindo
+  emissão em **modo pagamento por uso** até o teto de **franquia + 1.000** notas
+  no mês, registrando cada nota extra para cobrança por uso.
+- **FR-013**: No modo pagamento por uso, o sistema MUST avisar a empresa a cada
+  **100 notas extras** de que está sendo cobrada por uso.
+- **FR-014**: Ao atingir **franquia + 1.000** emissões no mês, o sistema MUST
+  bloquear novas emissões e exigir **liberação manual de um administrador do
+  sistema** (operador da plataforma) para prosseguir.
+- **FR-015**: O sistema MUST permitir que um administrador do sistema conceda
+  **liberação manual** a uma empresa bloqueada pelo teto, registrando quem
+  liberou, quando e o efeito da liberação. [NEEDS CLARIFICATION: a liberação
+  concede um novo incremento, remove o teto até o fim do mês, ou exige novo plano?]
+- **FR-016**: O sistema MUST reiniciar os contadores (franquia e excedente) a
+  cada novo mês de competência, conforme o plano vigente.
+- **FR-017**: O sistema MUST permitir solicitar o plano sob demanda, registrando
   um lead/contato comercial.
-- **FR-014**: O sistema MUST permitir ao `Admin` mudar de plano (upgrade/
+- **FR-018**: O sistema MUST permitir ao `Admin` mudar de plano (upgrade/
   downgrade) e refletir limite e cobrança conforme a política definida.
-- **FR-015**: Operações de assinatura e cobrança MUST ser restritas ao papel
-  `Admin` da empresa (Princípio III / RBAC da feature 001).
+- **FR-019**: Operações de assinatura e cobrança MUST ser restritas ao papel
+  `Admin` da empresa (Princípio III / RBAC da feature 001). A **liberação manual**
+  do teto (FR-015) é restrita ao **administrador do sistema** (plataforma), papel
+  distinto do `Admin` do tenant.
 
 ### Planos (catálogo inicial)
 
@@ -216,8 +244,15 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   próxima renovação, referência do gateway.
 - **Pagamento/Fatura**: cobrança de um ciclo. Atributos: valor, método (cartão/
   Pix/...), status, identificador no PagSeguro. Sem dados sensíveis de cartão.
-- **Uso Mensal (Medição)**: contador de notas emitidas por empresa/CNPJ por mês
-  de competência, comparado ao limite do plano.
+- **Uso Mensal (Medição)**: por empresa/CNPJ e mês de competência, contagem de
+  notas dentro da franquia e de notas extras (overage), comparada à franquia do
+  plano e ao teto de +1.000.
+- **Liberação Manual (Override)**: concessão de um administrador do sistema que
+  desbloqueia uma empresa que atingiu o teto. Atributos: quem liberou, quando,
+  efeito/validade.
+- **Administrador do Sistema**: operador da plataforma (papel distinto do `Admin`
+  do tenant) que concede liberações manuais. [NEEDS CLARIFICATION: como esse
+  papel de plataforma é modelado e autenticado.]
 - **Lead Comercial**: solicitação de plano sob demanda para contato de vendas.
 
 ## Success Criteria *(mandatory)*
@@ -226,8 +261,11 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
 
 - **SC-001**: Um visitante conclui conta → empresa → assinatura paga em menos de
   10 minutos, sem intervenção humana (planos self-service).
-- **SC-002**: 100% das emissões acima do limite do plano ou com assinatura
-  inativa são bloqueadas com orientação.
+- **SC-002**: 100% das emissões com assinatura inativa, e 100% das emissões além
+  do teto (franquia + 1.000) sem liberação manual, são bloqueadas com orientação.
+- **SC-006**: No modo pagamento por uso, o aviso é disparado exatamente a cada
+  100 notas extras, e toda nota extra é registrada para cobrança (0% de extras
+  não contabilizadas).
 - **SC-003**: 0% de armazenamento de dados sensíveis de cartão na plataforma.
 - **SC-004**: 100% dos webhooks do PagSeguro processados de forma idempotente
   (reprocessar o mesmo evento não altera o resultado).
@@ -243,5 +281,9 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   Princípio III.
 - Cobrança recorrente mensal; Pix tratado conforme suporte do gateway
   (confirmação assíncrona via webhook).
+- **Modelo de cota:** franquia mensal por plano → modo pagamento por uso até
+  +1.000 notas → bloqueio rígido → liberação manual do administrador do sistema.
+  [NEEDS CLARIFICATION: preço da nota extra e quando o excedente é cobrado
+  (fatura seguinte vs. imediata).]
 - A landing page pública faz parte do frontend (Next.js), separada do app
   autenticado.
