@@ -12,7 +12,7 @@
 | Artefato | Caminho | O que contém |
 | --- | --- | --- |
 | Constituição | [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) | Princípios de engenharia não-negociáveis (agnósticos de tecnologia) |
-| Tech Stack | [`.specify/memory/tech-stack.md`](../.specify/memory/tech-stack.md) | Escolhas concretas (Go, React, MongoDB, Strategy fiscal) que implementam os princípios |
+| Tech Stack | [`.specify/memory/tech-stack.md`](../.specify/memory/tech-stack.md) | Escolhas concretas (Go, Next.js, MongoDB, Strategy fiscal) que implementam os princípios |
 | Epic 1 | [`specs/001-auth-isolamento-equipe/spec.md`](../specs/001-auth-isolamento-equipe/spec.md) | Autenticação, isolamento multi-tenant e gestão de equipe |
 | Epic 2 | [`specs/002-cadastros-templates/spec.md`](../specs/002-cadastros-templates/spec.md) | Clientes, catálogo de serviços e templates de nota |
 | Epic 3 | [`specs/003-emissao-hibrida/spec.md`](../specs/003-emissao-hibrida/spec.md) | Motor de emissão híbrida (catálogo + digitação livre) |
@@ -24,12 +24,12 @@ No Spec-Driven Development separamos o **quê/porquê** do **como**:
 
 - **Specs** (`specs/NNN-*/spec.md`): comportamento observável e regras de
   negócio (BDD: Given/When/Then), **tech-agnostic**. Não citam MongoDB,
-  Go, React ou Strategy.
+  Go, Next.js ou Strategy.
 - **Constituição** (`.specify/memory/constitution.md`): princípios de engenharia
   **agnósticos de tecnologia** (camadas, TDD, isolamento multi-tenant, segurança
   fiscal, backend-first, MVVM no frontend).
 - **Tech Stack** (`.specify/memory/tech-stack.md`): as escolhas concretas que
-  implementam os princípios (Go, React, MongoDB, Strategy fiscal, papéis).
+  implementam os princípios (Go, Next.js, MongoDB, Strategy fiscal, papéis).
 - **Plano** (`plan.md`, gerado por feature via `/speckit-plan`): decisões
   técnicas por feature — schemas, índices por tenant, contratos de API etc.
 

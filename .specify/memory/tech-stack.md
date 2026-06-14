@@ -9,7 +9,7 @@
 
 | Camada | Tecnologia |
 |--------|------------|
-| Frontend | React (MVVM — Princípio XV) |
+| Frontend | Next.js (React, App Router) — MVVM, Princípio XV |
 | Backend | Go (Camadas — Princípio I) |
 | Persistência | MongoDB — Multi-Tenant Single-Database |
 | Infraestrutura local | Containers via Docker Compose (Princípio X) |
@@ -48,16 +48,21 @@ Padrão **Strategy** selecionado por tenant conforme `authType`:
 O motor de emissão depende da **interface** do provedor; adicionar um novo
 provedor não altera o motor (extensibilidade — Epic 4 / Princípio I).
 
-## Frontend (React)
+## Frontend (Next.js / React)
 
-- **Camadas (Princípio XV):** `Component → Hook/Store → Repository`.
-- **Organização:** `frontend/hooks/use<Feature>.ts` (ViewModel),
-  `frontend/lib/api/` (Repository). Hooks são auditados pelo agente `qa`
+- **Framework:** Next.js (App Router) + TypeScript, sem `any`. UI com
+  shadcn/ui. Páginas interativas marcadas com `'use client'`.
+- **Camadas (Princípio XV):** `Component/Page → Hook/Store → Repository`. A Page
+  nunca chama `lib/api/` diretamente.
+- **Organização:** `frontend/app/(dashboard)/<feature>/page.tsx` (View),
+  `frontend/hooks/use<Feature>.ts` (ViewModel), `frontend/lib/api/`
+  (Repository). Hooks são auditados pelo agente `qa`
   (`hooks/__tests__/use<Feature>.test.ts`).
-- **Chamadas de API:** apenas no Repository, com `credentials: 'include'`; DTOs
-  tipados na borda.
-- **Testes:** `vitest` (unidade de hooks com Repository mockado) e golden-path
-  no runtime real do browser (Princípio VIII).
+- **Chamadas de API:** apenas no Repository, com `credentials: 'include'`
+  (cookie HttpOnly de sessão); DTOs tipados na borda.
+- **Testes/lint:** `vitest` (unidade de hooks com Repository mockado),
+  `next lint`, `tsc --noEmit`, e golden-path no runtime real do browser
+  (Princípio VIII).
 
 ## Persistência (MongoDB)
 
@@ -86,7 +91,7 @@ provedor não altera o motor (extensibilidade — Epic 4 / Princípio I).
 
 ```
 backend/        # Go — handlers, services, repositories, internal/
-frontend/       # React — components, hooks, lib/api
+frontend/       # Next.js — app, components, hooks, lib/api
 specs/          # Spec Kit — specs, plans, tasks, contracts
 .specify/       # Constituição, tech-stack, templates e scripts do Spec Kit
 ```
