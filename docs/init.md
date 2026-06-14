@@ -23,9 +23,9 @@ No Spec-Driven Development separamos o **quê/porquê** do **como**:
 
 - **Specs** (`specs/NNN-*/spec.md`): comportamento observável e regras de
   negócio (BDD: Given/When/Then), **tech-agnostic**. Não citam MongoDB,
-  Mongoose, React ou Strategy.
+  Go, React ou Strategy.
 - **Constituição** (`.specify/memory/constitution.md`): princípios e a stack
-  como restrição de governança (React, Node.js, MongoDB, papéis, Strategy
+  como restrição de governança (React, Go, MongoDB, papéis, Strategy
   fiscal, isolamento multi-tenant).
 - **Plano** (`plan.md`, gerado por feature via `/speckit-plan`): decisões
   técnicas — schemas, índices por tenant, contratos de API, padrão Strategy etc.

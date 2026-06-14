@@ -59,7 +59,7 @@ A stack é uma restrição de governança (decisões detalhadas ficam em cada
 `plan.md`):
 
 - **Frontend:** React.
-- **Backend:** Node.js.
+- **Backend:** Go.
 - **Persistência:** MongoDB, padrão Multi-Tenant Single-Database (isolamento
   lógico por identificador de tenant). Toda coleção que contém dados de tenant
   DEVE ter índice que inclua o identificador de tenant para garantir isolamento
@@ -100,4 +100,4 @@ Versionamento desta constituição segue SemVer: MAJOR para remoção/redefiniç
 incompatível de princípios, MINOR para novos princípios/seções, PATCH para
 ajustes de redação.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-14 | **Last Amended**: 2026-06-14
+**Version**: 1.1.0 | **Ratified**: 2026-06-14 | **Last Amended**: 2026-06-14
