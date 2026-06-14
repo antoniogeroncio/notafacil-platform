@@ -16,6 +16,10 @@
 - Q: Efeito da liberação manual após o teto (franquia + 1.000)? → A: O administrador do sistema **concede um incremento adicional (+N)** e a medição **continua**, aplicando um novo teto.
 - Q: Como modelar o "administrador do sistema" (operador da plataforma)? → A: Usuário de **plataforma (backoffice)**, fora do modelo de tenant, com **RBAC global próprio** (privilégios isolados — Princípio III).
 - Q: Uma conta pode ter várias empresas/CNPJs na v1? → A: **Não — 1 conta = 1 empresa** na v1; multiempresa é evolução futura.
+- Q: Exigir verificação de e-mail antes de assinar/emitir? → A: **Sim** — a conta pode navegar, mas precisa do e-mail **verificado** antes de assinar um plano ou emitir.
+- Q: Política de cancelamento? → A: Acesso/emissão **até o fim do ciclo já pago**; **sem reembolso/proration**.
+- Q: Carência após falha de renovação recorrente? → A: **Sem carência** — a assinatura vira `Inadimplente` e a emissão é **suspensa imediatamente** até regularizar.
+- Q: Ciclo de cobrança na v1? → A: **Mensal apenas**; plano anual é evolução futura. Nomes/impostos são decisão comercial parametrizável.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -161,15 +165,16 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
 
 ### Edge Cases
 
-- Conta criada mas e-mail nunca verificado: [NEEDS CLARIFICATION: exigir
-  verificação antes de assinar/emitir?]
+- Conta criada mas e-mail nunca verificado: pode navegar, mas **não** consegue
+  assinar plano nem emitir até verificar o e-mail.
 - Conta × empresa: na **v1, 1 conta = 1 empresa** (consistente com a feature
   001). Suporte a múltiplas empresas por conta (contadores/grupos) fica como
   evolução futura, exigindo modelo de associação conta↔empresa.
-- Cancelamento no meio do ciclo: acesso permanece até o fim do período pago?
-  [NEEDS CLARIFICATION: política de proration/cancelamento.]
-- Falha de renovação recorrente (cartão expirado): período de carência antes de
-  suspender emissão. [NEEDS CLARIFICATION: dias de carência.]
+- Cancelamento no meio do ciclo: acesso e emissão permanecem até o **fim do
+  período já pago**; sem reembolso nem proration.
+- Falha de renovação recorrente (cartão expirado/recusado): a assinatura passa a
+  `Inadimplente` e a emissão é **suspensa imediatamente** (sem carência) até a
+  regularização do pagamento.
 - Webhook do PagSeguro duplicado ou fora de ordem: processamento idempotente.
 - Downgrade para um plano com limite menor que o uso atual do mês: definir
   comportamento (bloquear até o próximo ciclo?).
@@ -199,7 +204,9 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   notificações (webhooks) do PagSeguro para atualizar o status de pagamento e da
   assinatura.
 - **FR-009**: O sistema MUST manter o estado da assinatura por empresa
-  (`Ativa`, `Inadimplente`, `Cancelada`, etc.) e o ciclo/renovação.
+  (`Ativa`, `Inadimplente`, `Cancelada`, etc.) em ciclo **mensal**. Em falha de
+  renovação recorrente, a assinatura MUST passar a `Inadimplente`
+  **imediatamente** (sem carência), suspendendo a emissão até regularização.
 - **FR-010**: O sistema MUST contabilizar, por CNPJ e por mês de competência, as
   notas emitidas, distinguindo as que estão **dentro da franquia** das **extras
   (overage)**.
@@ -230,6 +237,11 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   `Admin` da empresa (Princípio III / RBAC da feature 001). A **liberação manual**
   do teto (FR-015) é restrita ao **administrador do sistema** (plataforma), papel
   distinto do `Admin` do tenant.
+- **FR-020**: O cadastro self-service MUST exigir **e-mail verificado** antes de
+  o usuário assinar um plano ou emitir; antes disso, apenas navegação básica é
+  permitida.
+- **FR-021**: Ao cancelar a assinatura, o sistema MUST manter acesso e emissão
+  **até o fim do ciclo já pago**, sem reembolso nem proration.
 
 ### Planos (catálogo inicial)
 
@@ -240,8 +252,9 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
 | Plano 3 | até 4.000 notas | R$ 500 | Self-service |
 | Sob Demanda | acima de 4.000 / customizado | sob consulta | Consultor (vendas) |
 
-> [NEEDS CLARIFICATION: nomes comerciais dos planos; se os valores são com
-> impostos inclusos; ciclo apenas mensal ou também anual.]
+> Ciclo de cobrança **mensal apenas** na v1 (plano anual é evolução futura). Os
+> nomes comerciais e a inclusão de impostos nos preços são decisão de negócio,
+> parametrizáveis.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -251,8 +264,9 @@ confirmando que um lead/contato comercial é registrado para acompanhamento.
   uma assinatura e uma cota de emissão.
 - **Plano**: item do catálogo. Atributos: nome, limite mensal de emissões, preço
   mensal, tipo (self-service | sob-demanda).
-- **Assinatura**: vínculo empresa↔plano. Atributos: status, data de início,
-  próxima renovação, referência do gateway.
+- **Assinatura**: vínculo empresa↔plano, ciclo **mensal**. Atributos: status
+  (`Ativa`/`Inadimplente`/`Cancelada`), data de início, próxima renovação, fim do
+  ciclo pago (para cancelamento), referência do gateway.
 - **Pagamento/Fatura**: cobrança de um ciclo. Atributos: valor, método (cartão/
   Pix/...), status, identificador no PagSeguro. Sem dados sensíveis de cartão.
 - **Uso Mensal (Medição)**: por empresa/CNPJ e mês de competência, contagem de
