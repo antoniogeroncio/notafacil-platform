@@ -27,6 +27,14 @@ yarn-error.log*
 # Coverage / test
 coverage/
 .nyc_output/
+*.out
+coverage.txt
+
+# Go
+*.exe
+*.test
+vendor/
+backend/bin/
 
 # Editor / OS
 .DS_Store
